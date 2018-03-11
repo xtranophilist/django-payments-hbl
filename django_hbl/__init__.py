@@ -12,7 +12,6 @@ from payments.core import BasicProvider
 from payments.forms import PaymentForm
 
 
-
 class HBLProvider(BasicProvider):
     '''
     Himalayan Bank Payment Gateway Provider for django_payments
@@ -73,13 +72,15 @@ class HBLProvider(BasicProvider):
         currency_code = currency_codes.get(payment.currency)
         if not currency_code:
             raise PaymentError('Unsupported Currency for the Gateway')
+        padded_amount = str(int(payment.get_total_price()[0] * 100)).zfill(12)
+        # padded_amount = str(int(1 * 100)).zfill(12)
         data = {
             'paymentGatewayID': self.gateway_id,
             'currencyCode': currency_code,
             'productDesc': "Payment #%s" % (payment.pk,),
             'invoiceNo': payment.order_id,
-            'Amount': payment.get_total_price()[0],
-            'nonSecure': 'Y'
+            'Amount': padded_amount,
+            # 'Nonsecure': 'Y'
         }
         return data
 
