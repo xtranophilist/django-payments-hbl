@@ -1,4 +1,6 @@
-from __future__ import unicode_literals
+import hmac
+import hashlib
+import base64
 
 from django.http import HttpResponseRedirect
 
@@ -23,8 +25,11 @@ class HBLProvider(BasicProvider):
         super().__init__(*args, **kwargs)
 
     def get_form(self, payment, data=None):
-        return PaymentForm(self.get_hidden_fields(payment),
-                           self.endpoint, self._method)
+        return PaymentForm(self.get_hidden_fields(payment), self.endpoint, self._method)
+
+    def get_hash(self, msg):
+        dig = hmac.new(bytes(self.secret_key, 'latin-1'), msg=bytes(msg, 'latin-1'), digestmod=hashlib.sha256).digest()
+        return base64.b64encode(dig).decode()  # py3k-mode
 
     def get_hidden_fields(self, payment):
         payment.save()
@@ -38,12 +43,16 @@ class HBLProvider(BasicProvider):
             raise PaymentError('Unsupported Currency for the Gateway')
         padded_amount = str(int(payment.get_total_price()[0] * 100)).zfill(12)
         # padded_amount = str(int(1 * 100)).zfill(12)
+        non_secure = 'N'
+        msg_hash = self.get_hash(str(self.gateway_id) + str(payment.order_id) + padded_amount + str(currency_code) + non_secure)
         data = {
             'paymentGatewayID': self.gateway_id,
             'currencyCode': currency_code,
             'productDesc': "Payment #%s" % (payment.pk,),
             'invoiceNo': payment.order_id,
             'Amount': padded_amount,
+            'hash': msg_hash,
+            # 'Nonsecure': non_secure,
         }
         return data
 
