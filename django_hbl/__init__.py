@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.http import HttpResponseRedirect
 
-from .forms import HBLForm
 from payments import PaymentError, PaymentStatus
 from payments.core import BasicProvider
 
@@ -13,6 +12,9 @@ class HBLProvider(BasicProvider):
     """
     Himalayan Bank Payment Gateway Provider for django_payments
     """
+
+    def get_token_from_request(self, payment, request):
+        pass
 
     def __init__(self, *args, **kwargs):
         self.secret_key = kwargs.pop('secret_key')
