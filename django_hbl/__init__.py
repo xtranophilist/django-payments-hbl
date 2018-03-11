@@ -25,7 +25,7 @@ class HBLProvider(BasicProvider):
         super().__init__(*args, **kwargs)
 
     def get_form(self, payment, data=None):
-        return PaymentForm(self.get_hidden_fields(payment), self.endpoint, self._method)
+        return PaymentForm(self.get_hidden_fields(payment), self.endpoint, self._method, autosubmit=True)
 
     def get_hash(self, msg):
         dig = hmac.new(bytes(self.secret_key, 'latin-1'), msg=bytes(msg, 'latin-1'), digestmod=hashlib.sha256).digest()
