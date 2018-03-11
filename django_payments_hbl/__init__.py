@@ -32,7 +32,6 @@ class HBLProvider(BasicProvider):
         return base64.b64encode(dig).decode()  # py3k-mode
 
     def get_hidden_fields(self, payment):
-        payment.save()
         return_url = self.get_return_url(payment)
         currency_codes = {
             'NPR': 524,
@@ -57,6 +56,8 @@ class HBLProvider(BasicProvider):
         return data
 
     def process_data(self, payment, request):
+        import ipdb
+        ipdb.set_trace()
         verification_result = request.GET.get('verification_result')
         if verification_result:
             payment.change_status(verification_result)
@@ -65,11 +66,17 @@ class HBLProvider(BasicProvider):
         return HttpResponseRedirect(payment.get_failure_url())
 
     def capture(self, payment, amount=None):
+        import ipdb
+        ipdb.set_trace()
         payment.change_status(PaymentStatus.CONFIRMED)
         return amount
 
     def release(self, payment):
+        import ipdb
+        ipdb.set_trace()
         return None
 
     def refund(self, payment, amount=None):
+        import ipdb
+        ipdb.set_trace()
         return amount or 0

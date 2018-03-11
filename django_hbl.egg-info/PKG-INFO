@@ -1,0 +1,11 @@
+Metadata-Version: 1.0
+Name: django-hbl
+Version: 0.1
+Summary: Himalayan Bank Payment Gateway with django-payments
+Home-page: http://github.com/xtranophilist/django_hbl
+Author: Dipesh Acharya
+Author-email: dipesh@awecode.com
+License: MIT
+Description-Content-Type: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
