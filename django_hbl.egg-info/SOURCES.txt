@@ -1,6 +1,0 @@
-django_hbl/__init__.py
-django_hbl.egg-info/PKG-INFO
-django_hbl.egg-info/SOURCES.txt
-django_hbl.egg-info/dependency_links.txt
-django_hbl.egg-info/not-zip-safe
-django_hbl.egg-info/top_level.txt
