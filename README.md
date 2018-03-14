@@ -24,7 +24,7 @@ In your Django project settings:
 
 ```
 PAYMENT_VARIANTS = {
-    'default': ('django_hbl.HBLProvider', {
+    'default': ('django_payments_hbl.HBLProvider', {
         'gateway_id': '<gateway/merchant_id>',
         'secret_key': '<your_secret_key>'
     })}
