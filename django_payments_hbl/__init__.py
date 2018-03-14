@@ -27,7 +27,8 @@ class HBLProvider(BasicProvider):
     def get_form(self, payment, data=None):
         return PaymentForm(self.get_hidden_fields(payment), self.endpoint, self._method, autosubmit=True)
 
-    def get_hash(self, msg):
+    def get_hash(self, *args):
+        msg = ''.join(map(str, args))
         dig = hmac.new(bytes(self.secret_key, 'latin-1'), msg=bytes(msg, 'latin-1'), digestmod=hashlib.sha256).digest()
         return base64.b64encode(dig).decode()  # py3k-mode
 
@@ -50,8 +51,8 @@ class HBLProvider(BasicProvider):
         padded_amount = self.amount(payment)
         padded_amount = str(int(1 * 100)).zfill(12)
         non_secure = 'N'
-        request_hash = self.get_hash(
-            '{}{}{}{}{}'.format(self.gateway_id, payment.order_id, padded_amount, currency_code, non_secure))
+        # HashValue = merchantID + invoiceNumber +  amount + currencyCode + nonSecure
+        request_hash = self.get_hash(self.gateway_id, payment.order_id, padded_amount, currency_code, non_secure)
         data = {
             'paymentGatewayID': self.gateway_id,
             'currencyCode': currency_code,
@@ -68,11 +69,12 @@ class HBLProvider(BasicProvider):
         if response_code == '00':
             # fraud_code = request.GET.get('fraudCode')
             # check hash
-            response_hash = self.get_hash(
-                '{}0000{}{}{}{}{}{}{}{}'.format(self.gateway_id, request.GET.get('pan'), self.amount(payment),
-                                                self.invoice_no(payment), request.GET.get('tranRef'),
-                                                request.GET.get('approvalCode'),
-                                                request.GET.get('eci'), request.GET.get('dateTime'), request.GET.get('status')))
+            # HashValue = paymentGatewayID + respCode + fraudCode + Pan + Amount + invoiceNo + tranRef + approvalCode
+            # + Eci + dateTime + Status
+            response_hash = self.get_hash(self.gateway_id, '0000', request.GET.get('pan'), self.amount(payment),
+                                          self.invoice_no(payment), request.GET.get('tranRef'),
+                                          request.GET.get('approvalCode'),
+                                          request.GET.get('eci'), request.GET.get('dateTime'), request.GET.get('status'))
             if response_hash == request.GET.get('hashValue'):
                 payment.change_status(PaymentStatus.CONFIRMED)
                 return HttpResponseRedirect(payment.get_success_url())
