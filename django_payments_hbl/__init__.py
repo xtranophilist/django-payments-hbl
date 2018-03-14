@@ -36,10 +36,10 @@ class HBLProvider(BasicProvider):
         # TODO Handle different Saleor versions
         return payment.get_total_price()[0]
 
-    def amount_str(self, payment):
+    def get_amount_str(self, payment):
         return str(int(self.get_amount(payment) * 100)).zfill(12)
 
-    def invoice_no(self, payment):
+    def get_invoice_no(self, payment):
         return str(payment.order_id)
 
     def get_hidden_fields(self, payment):
@@ -51,8 +51,8 @@ class HBLProvider(BasicProvider):
         currency_code = currency_codes.get(payment.currency)
         if not currency_code:
             raise PaymentError('Unsupported Currency for the Gateway')
-        padded_amount = self.amount_str(payment)
-        padded_amount = str(int(1 * 100)).zfill(12)
+        padded_amount = self.get_amount_str(payment)
+        # padded_amount = str(int(1 * 100)).zfill(12)
         non_secure = 'N'
         # HashValue = merchantID + invoiceNumber +  amount + currencyCode + nonSecure
         request_hash = self.get_hash(self.gateway_id, payment.order_id, padded_amount, currency_code, non_secure)
@@ -60,10 +60,10 @@ class HBLProvider(BasicProvider):
             'paymentGatewayID': self.gateway_id,
             'currencyCode': currency_code,
             'productDesc': "Payment #%s" % (payment.pk,),
-            'invoiceNo': self.invoice_no(payment),
+            'invoiceNo': self.get_invoice_no(payment),
             'Amount': padded_amount,
             'hashValue': request_hash,
-            # 'Nonsecure': non_secure,
+            'Nonsecure': non_secure,
         }
         return data
 
@@ -74,8 +74,8 @@ class HBLProvider(BasicProvider):
             # check hash
             # HashValue = paymentGatewayID + respCode + fraudCode + Pan + Amount + invoiceNo + tranRef + approvalCode
             # + Eci + dateTime + Status
-            response_hash = self.get_hash(self.gateway_id, '00', fraud_code, request.GET.get('pan'), self.amount_str(payment),
-                                          self.invoice_no(payment), request.GET.get('tranRef'),
+            response_hash = self.get_hash(self.gateway_id, '00', fraud_code, request.GET.get('pan'), self.get_amount_str(payment),
+                                          self.get_invoice_no(payment), request.GET.get('tranRef'),
                                           request.GET.get('approvalCode'),
                                           request.GET.get('eci'), request.GET.get('dateTime'), request.GET.get('status'))
             payment.fraud_status = FraudStatus.ACCEPT if fraud_code == '00' else FraudStatus.REJECT
