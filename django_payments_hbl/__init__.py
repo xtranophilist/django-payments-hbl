@@ -19,6 +19,24 @@ class HBLProvider(BasicProvider):
         'USD': 840
     }
 
+    FRAUD_STATUSES = {
+        '00': 'High possibility of no fraud',
+        '86': 'Merchant in whitelist',
+        '87': 'PAN in whitelist',
+        '88': 'Not Local IP Country',
+        '89': 'Bank Name not matched',
+        '90': 'Bank Country not matched',
+        '91': 'Exceeded over Txn limit of one IP using multiple PAN within 24 hours',
+        '92': 'Exceeded over PAN limit of inter non­3DS cards within 24 hours',
+        '93': 'Exceeded over PAN limit of inter 3DS cards within 24 hours',
+        '94': 'Exceeded over PAN limit of local non­3DS cards within 24 hours',
+        '95': 'Exceeded over PAN limit of local 3DS cards within 24 hours',
+        '96': 'BIN in black list',
+        '97': 'IP in black list',
+        '98': 'PAN in blacklist',
+        '99': 'General Error'
+    }
+
     def get_token_from_request(self, payment, request):
         pass
 
@@ -71,6 +89,7 @@ class HBLProvider(BasicProvider):
         response_code = request.GET.get('respCode')
         fraud_code = request.GET.get('fraudCode')
         payment.fraud_status = FraudStatus.ACCEPT if fraud_code == '00' else FraudStatus.REJECT
+        payment.fraud_message = self.FRAUD_STATUSES.get(fraud_code)
         if response_code == '00':
             # check hash
             # HashValue = paymentGatewayID + respCode + fraudCode + Pan + Amount + invoiceNo + tranRef + approvalCode
