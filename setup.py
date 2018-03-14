@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='django-payments-hbl',
-      version='0.1.1',
+      version='0.1.2',
       description='Himalayan Bank Payment Gateway with django-payments',
       url='http://github.com/xtranophilist/django-payments-hbl',
       author='Dipesh Acharya',

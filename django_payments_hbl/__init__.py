@@ -7,7 +7,8 @@ from django.http import HttpResponseRedirect
 
 from payments import PaymentError, PaymentStatus, FraudStatus
 from payments.core import BasicProvider
-from payments.forms import PaymentForm
+
+from .forms import HBLForm
 
 
 class HBLProvider(BasicProvider):
@@ -48,7 +49,7 @@ class HBLProvider(BasicProvider):
         super().__init__(*args, **kwargs)
 
     def get_form(self, payment, data=None):
-        return PaymentForm(self.get_hidden_fields(payment), self.endpoint, self._method, autosubmit=True)
+        return HBLForm(self.get_hidden_fields(payment), self.endpoint, self._method, autosubmit=True)
 
     def get_hash(self, *args):
         msg = ''.join(map(str, args))
