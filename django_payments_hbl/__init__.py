@@ -59,7 +59,7 @@ class HBLProvider(BasicProvider):
         try:
             amount = payment.get_total_price().net.amount
         except AttributeError:
-            amount = payment.get_total_price()[0]
+            amount = payment.get_total_price().net
         return amount
 
     def get_amount_str(self, payment):
