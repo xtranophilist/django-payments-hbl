@@ -4,7 +4,7 @@ import base64
 
 from django.http import HttpResponseRedirect
 
-from payments import PaymentError, PaymentStatus
+from payments import PaymentError, PaymentStatus, FraudStatus
 from payments.core import BasicProvider
 
 from payments.forms import PaymentForm
@@ -40,7 +40,6 @@ class HBLProvider(BasicProvider):
 
     def get_hidden_fields(self, payment):
         return_url = self.get_return_url(payment)
-        print(return_url)
         currency_codes = {
             'NPR': 524,
             'USD': 840
@@ -67,14 +66,15 @@ class HBLProvider(BasicProvider):
     def process_data(self, payment, request):
         response_code = request.GET.get('respCode')
         if response_code == '00':
-            # fraud_code = request.GET.get('fraudCode')
+            fraud_code = request.GET.get('fraudCode')
             # check hash
             # HashValue = paymentGatewayID + respCode + fraudCode + Pan + Amount + invoiceNo + tranRef + approvalCode
             # + Eci + dateTime + Status
-            response_hash = self.get_hash(self.gateway_id, '0000', request.GET.get('pan'), self.amount(payment),
+            response_hash = self.get_hash(self.gateway_id, '00', fraud_code, request.GET.get('pan'), self.amount(payment),
                                           self.invoice_no(payment), request.GET.get('tranRef'),
                                           request.GET.get('approvalCode'),
                                           request.GET.get('eci'), request.GET.get('dateTime'), request.GET.get('status'))
+            payment.fraud_status = FraudStatus.ACCEPT if fraud_code == '00' else FraudStatus.REJECT
             if response_hash == request.GET.get('hashValue'):
                 payment.change_status(PaymentStatus.CONFIRMED)
                 return HttpResponseRedirect(payment.get_success_url())
