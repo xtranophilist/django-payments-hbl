@@ -101,7 +101,8 @@ class HBLProvider(BasicProvider):
                                           request.GET.get('approvalCode'),
                                           request.GET.get('eci'), request.GET.get('dateTime'), request.GET.get('status'))
             if response_hash == request.GET.get('hashValue'):
-                self.capture(payment)
+                # self.capture(payment)
+                payment.change_status(PaymentStatus.CONFIRMED)
                 return HttpResponseRedirect(payment.get_success_url())
             else:
                 payment.change_status(PaymentStatus.ERROR)
