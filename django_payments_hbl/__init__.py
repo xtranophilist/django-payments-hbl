@@ -1,3 +1,4 @@
+import json
 import hmac
 import hashlib
 import base64
@@ -90,6 +91,7 @@ class HBLProvider(BasicProvider):
         fraud_code = request.GET.get('fraudCode')
         payment.fraud_status = FraudStatus.ACCEPT if fraud_code == '00' else FraudStatus.REJECT
         payment.fraud_message = self.FRAUD_STATUSES.get(fraud_code)
+        payment.extra_data = json.dumps(request.GET)
         if response_code == '00':
             # check hash
             # HashValue = paymentGatewayID + respCode + fraudCode + Pan + Amount + invoiceNo + tranRef + approvalCode
