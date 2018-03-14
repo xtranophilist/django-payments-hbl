@@ -56,8 +56,11 @@ class HBLProvider(BasicProvider):
         return base64.b64encode(dig).decode()  # py3k-mode
 
     def get_amount(self, payment):
-        # TODO Handle different django_payments versions
-        return payment.get_total_price()[0]
+        try:
+            amount = payment.get_total_price().net.amount
+        except AttributeError:
+            amount = payment.get_total_price()[0]
+        return amount
 
     def get_amount_str(self, payment):
         return str(int(self.get_amount(payment) * 100)).zfill(12)
@@ -71,7 +74,6 @@ class HBLProvider(BasicProvider):
         if not currency_code:
             raise PaymentError('Unsupported Currency for the Gateway')
         padded_amount = self.get_amount_str(payment)
-        # padded_amount = str(int(1 * 100)).zfill(12)
         non_secure = 'N'
         # HashValue = merchantID + invoiceNumber +  amount + currencyCode + nonSecure
         request_hash = self.get_hash(self.gateway_id, payment.order_id, padded_amount, currency_code, non_secure)
