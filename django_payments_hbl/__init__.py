@@ -6,7 +6,6 @@ from django.http import HttpResponseRedirect
 
 from payments import PaymentError, PaymentStatus, FraudStatus
 from payments.core import BasicProvider
-
 from payments.forms import PaymentForm
 
 
@@ -14,6 +13,11 @@ class HBLProvider(BasicProvider):
     """
     Himalayan Bank Payment Gateway Provider for django_payments
     """
+
+    CURRENCY_CODES = {
+        'NPR': 524,
+        'USD': 840
+    }
 
     def get_token_from_request(self, payment, request):
         pass
@@ -33,7 +37,7 @@ class HBLProvider(BasicProvider):
         return base64.b64encode(dig).decode()  # py3k-mode
 
     def get_amount(self, payment):
-        # TODO Handle different Saleor versions
+        # TODO Handle different django_payments versions
         return payment.get_total_price()[0]
 
     def get_amount_str(self, payment):
@@ -43,12 +47,8 @@ class HBLProvider(BasicProvider):
         return str(payment.order_id)
 
     def get_hidden_fields(self, payment):
-        return_url = self.get_return_url(payment)
-        currency_codes = {
-            'NPR': 524,
-            'USD': 840
-        }
-        currency_code = currency_codes.get(payment.currency)
+        # return_url = self.get_return_url(payment)
+        currency_code = self.CURRENCY_CODES.get(payment.currency)
         if not currency_code:
             raise PaymentError('Unsupported Currency for the Gateway')
         padded_amount = self.get_amount_str(payment)
@@ -69,8 +69,9 @@ class HBLProvider(BasicProvider):
 
     def process_data(self, payment, request):
         response_code = request.GET.get('respCode')
+        fraud_code = request.GET.get('fraudCode')
+        payment.fraud_status = FraudStatus.ACCEPT if fraud_code == '00' else FraudStatus.REJECT
         if response_code == '00':
-            fraud_code = request.GET.get('fraudCode')
             # check hash
             # HashValue = paymentGatewayID + respCode + fraudCode + Pan + Amount + invoiceNo + tranRef + approvalCode
             # + Eci + dateTime + Status
@@ -78,12 +79,13 @@ class HBLProvider(BasicProvider):
                                           self.get_invoice_no(payment), request.GET.get('tranRef'),
                                           request.GET.get('approvalCode'),
                                           request.GET.get('eci'), request.GET.get('dateTime'), request.GET.get('status'))
-            payment.fraud_status = FraudStatus.ACCEPT if fraud_code == '00' else FraudStatus.REJECT
             if response_hash == request.GET.get('hashValue'):
                 self.capture(payment)
                 return HttpResponseRedirect(payment.get_success_url())
             else:
                 payment.change_status(PaymentStatus.ERROR)
+        else:
+            payment.change_status(PaymentStatus.REJECTED)
         return HttpResponseRedirect(payment.get_failure_url())
 
     def capture(self, payment, amount=None):
