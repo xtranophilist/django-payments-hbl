@@ -32,8 +32,12 @@ class HBLProvider(BasicProvider):
         dig = hmac.new(bytes(self.secret_key, 'latin-1'), msg=bytes(msg, 'latin-1'), digestmod=hashlib.sha256).digest()
         return base64.b64encode(dig).decode()  # py3k-mode
 
-    def amount(self, payment):
-        return str(int(payment.get_total_price()[0] * 100)).zfill(12)
+    def get_amount(self, payment):
+        # TODO Handle different Saleor versions
+        return payment.get_total_price()[0]
+
+    def amount_str(self, payment):
+        return str(int(self.get_amount(payment) * 100)).zfill(12)
 
     def invoice_no(self, payment):
         return str(payment.order_id)
@@ -47,7 +51,7 @@ class HBLProvider(BasicProvider):
         currency_code = currency_codes.get(payment.currency)
         if not currency_code:
             raise PaymentError('Unsupported Currency for the Gateway')
-        padded_amount = self.amount(payment)
+        padded_amount = self.amount_str(payment)
         padded_amount = str(int(1 * 100)).zfill(12)
         non_secure = 'N'
         # HashValue = merchantID + invoiceNumber +  amount + currencyCode + nonSecure
@@ -70,18 +74,19 @@ class HBLProvider(BasicProvider):
             # check hash
             # HashValue = paymentGatewayID + respCode + fraudCode + Pan + Amount + invoiceNo + tranRef + approvalCode
             # + Eci + dateTime + Status
-            response_hash = self.get_hash(self.gateway_id, '00', fraud_code, request.GET.get('pan'), self.amount(payment),
+            response_hash = self.get_hash(self.gateway_id, '00', fraud_code, request.GET.get('pan'), self.amount_str(payment),
                                           self.invoice_no(payment), request.GET.get('tranRef'),
                                           request.GET.get('approvalCode'),
                                           request.GET.get('eci'), request.GET.get('dateTime'), request.GET.get('status'))
             payment.fraud_status = FraudStatus.ACCEPT if fraud_code == '00' else FraudStatus.REJECT
             if response_hash == request.GET.get('hashValue'):
-                payment.change_status(PaymentStatus.CONFIRMED)
+                self.capture(payment)
                 return HttpResponseRedirect(payment.get_success_url())
             else:
                 payment.change_status(PaymentStatus.ERROR)
         return HttpResponseRedirect(payment.get_failure_url())
 
     def capture(self, payment, amount=None):
+        payment.captured_amount = self.get_amount(payment)
         payment.change_status(PaymentStatus.CONFIRMED)
         return amount
